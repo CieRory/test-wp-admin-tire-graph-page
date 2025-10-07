@@ -1,0 +1,60 @@
+name: nitto-tire-calculator
+recipe: wordpress
+excludes:
+  - vendor
+  - node_modules
+  - .git
+  - /wp-content/uploads
+  - /wp-content/upgrade
+  - /wp-content/backup-db
+  - /wp-content/mu-plugins
+  # - /wp-content/plugins
+  - /wp-content/plugins/Fancy-Squares/node_modules
+  - /wp-content/plugins/Fancy-Squares-Core-Block-Enhancements/node_modules
+  - /wp-content/themes/sage/node_modules
+  - /wp-content/themes/full-site-editing/node_modules
+  # - "!/wp-content/plugins/Fancy-Squares"
+  # - "!/wp-content/themes/sage"
+  # - "!/wp-content/themes/full-site-editing"
+config:
+  php: 8.2
+  composer_version: 2
+  webroot: .
+  database: mysql
+  cache: redis
+  ssl: false
+  via: nginx
+  xdebug: true
+services:
+  appserver:
+    build:
+      - cp wp-config-local.php wp-config.php
+    run:
+      - .lando/run.sh
+  phpmyadmin:
+    type: phpmyadmin
+    host: database
+  mailhog:
+    type: mailhog
+    portforward: true
+    hogfrom:
+      - appserver
+
+proxy:
+  phpmyadmin:
+    - phpmyadmin.lndo.site # Lando's automatic wildcard domain
+
+events:
+  pre-start:
+    - appserver: .lando/pre-start.sh
+  post-start:
+    - appserver: .lando/post-start.sh
+#
+#
+# The best way to improve performance is to exclude WP directories from bind mounting.
+# This means that you will NOT be able to make changes to these files at runtime,
+# they will be copied to the internal docker instance on startup and not synced.
+# You'll have to restart lando in order to copy changes.
+# Remember to rebuild after making changes to the lando.yml.
+
+# Additionally, if you are using composer, you'll want to add the vendor/ directory -- or node_modules for node.
